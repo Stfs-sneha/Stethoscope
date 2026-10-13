@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Untethered: Dual-Path Bio-Acoustic Auscultation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{--bg:#090D12;--bg2:#0E131B;--cy:#00F2FE;--em:#10B981;--tx:#E6EDF3;--mu:#8B98A8;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 80px);background:var(--bg)}
+body{margin:0;background:radial-gradient(1100px 600px at 80% -10%,#12202b 0,transparent 60%),var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.mu{color:var(--mu)}
+.slab{background:linear-gradient(145deg,#161e2a,#0b1018);border:1px solid rgba(255,255,255,.1);box-shadow:18px 24px 48px rgba(0,0,0,.55),-8px -8px 22px rgba(255,255,255,.025),inset 0 1px 0 rgba(255,255,255,.08)}
+.well{background:#070a0f;border:1px solid rgba(255,255,255,.05);box-shadow:inset 6px 6px 14px rgba(0,0,0,.75),inset -3px -3px 8px rgba(255,255,255,.03)}
+.glass{background:rgba(14,19,27,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.led{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em);animation:p 2.2s infinite;flex:none}
+.led.amber{background:#F5B83D;box-shadow:0 0 10px #F5B83D}
+@keyframes p{50%{opacity:.35}}
+.coin{aspect-ratio:1;border-radius:50%;position:relative;background:radial-gradient(circle at 32% 26%,#1d2531,#131924 62%,#0b0f16);border:1px solid rgba(255,255,255,.1);box-shadow:14px 22px 38px rgba(0,0,0,.7),inset 0 1px 2px rgba(255,255,255,.18),inset 0 -6px 12px rgba(0,0,0,.6);animation:fl 6s ease-in-out infinite}
+.coin::before{content:"";position:absolute;inset:11%;border-radius:50%;background:radial-gradient(circle at 38% 30%,#161d28,#080b10 75%);border:2px solid #2a3340;box-shadow:inset 0 3px 8px rgba(0,0,0,.85),0 0 0 2px rgba(0,242,254,.5),0 0 14px rgba(0,242,254,.35)}
+.coin::after{content:"";position:absolute;inset:36%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#222b37,#06090d);box-shadow:inset 0 2px 5px #000}
+@keyframes fl{50%{transform:translateY(-8px)}}
+.tog{padding:.55rem 1rem;border-radius:.8rem;background:linear-gradient(145deg,#1a2230,#0e141d);border:1px solid rgba(255,255,255,.1);box-shadow:5px 6px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .12s,box-shadow .12s;font-size:.85rem;cursor:pointer;color:var(--tx)}
+.tog:active,.tog[aria-pressed=true]{transform:translateY(2px);box-shadow:inset 3px 3px 8px rgba(0,0,0,.7),0 0 0 1px rgba(0,242,254,.5),0 0 14px rgba(0,242,254,.25)}
+.tog:focus-visible,a:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+.chip{font-size:.7rem;padding:.2rem .55rem;border-radius:99px;border:1px solid rgba(255,255,255,.12);color:var(--mu);transition:.12s}
+.chip.on{color:#06201a;background:var(--em);border-color:var(--em);box-shadow:0 0 12px rgba(16,185,129,.6)}
+.chip.warn.on{background:#F5B83D;border-color:#F5B83D;box-shadow:0 0 12px rgba(245,184,61,.6);color:#2a1c00}
+.stack{position:relative;height:430px;perspective:900px;--g:30px;touch-action:pan-y}
+.lyr{position:absolute;left:50%;top:40px;width:min(280px,70%);height:78px;border-radius:50%/40%;transform:translateX(-50%) translateY(calc(var(--i)*var(--g))) rotateX(62deg);transition:transform .35s,box-shadow .2s,filter .2s;cursor:pointer;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;text-shadow:0 1px 2px #000;box-shadow:0 14px 20px rgba(0,0,0,.55),inset 0 2px 3px rgba(255,255,255,.25)}
+.lyr[aria-pressed=true]{box-shadow:0 0 0 2px var(--cy),0 0 28px rgba(0,242,254,.5);filter:brightness(1.25)}
+dialog{background:#0E131B;color:var(--tx);border:1px solid rgba(255,255,255,.12);border-radius:1.25rem;max-width:560px;width:calc(100% - 2rem);padding:1.5rem}
+dialog::backdrop{background:rgba(0,0,0,.7);backdrop-filter:blur(4px)}
+@media (prefers-reduced-motion:reduce){.coin,.led{animation:none}html{scroll-behavior:auto}*{transition:none!important}}
+#scene .cp{position:absolute;left:0;top:0;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 26%,#1d2531,#131924 62%,#0b0f16);border:1px solid rgba(255,255,255,.12);box-shadow:10px 16px 26px rgba(0,0,0,.65),inset 0 1px 2px rgba(255,255,255,.18);transition:transform 1.1s cubic-bezier(.5,0,.2,1);display:grid;place-items:center;z-index:5}
+.cp::before{content:"";position:absolute;inset:12%;border-radius:50%;border:2px solid #2d3745;background:radial-gradient(circle,#0a0e14,#06090d)}
+.cp::after{content:"";position:absolute;left:-3%;right:-3%;top:46%;height:8%;background:linear-gradient(90deg,#c9a24a 0 6%,transparent 6% 94%,#c9a24a 94%)}
+.ledc{position:relative;z-index:1;width:16%;aspect-ratio:1;border-radius:50%;background:#F5B83D;box-shadow:0 0 10px #F5B83D;animation:p 1.4s infinite}
+.cp.act .ledc{background:var(--em);box-shadow:0 0 12px var(--em);animation:none}
+.arc{fill:none;stroke-width:2.5;stroke-dasharray:6 7;opacity:0;transition:opacity .4s .9s}
+#scene.act .arc{opacity:1;animation:fw 1s linear infinite}
+@keyframes fw{to{stroke-dashoffset:-26}}
+.skin{background:linear-gradient(180deg,#3a2f2c,#241d1b);border-radius:50% 50% 0 0/38% 38% 0 0;box-shadow:inset 0 3px 8px rgba(255,255,255,.08)}
+.sel{filter:drop-shadow(0 0 6px #00F2FE)}
+.rp{opacity:0}
+.knock .sh{animation:sh .08s linear infinite}.knock .gk{animation:sg .08s linear infinite}.knock .rp{animation:rp 1.2s ease-out infinite}
+@keyframes sh{0%,100%{transform:translate(-3px,-1px)}50%{transform:translate(3px,1px)}}
+@keyframes sg{0%,100%{transform:translate(-1.2px,0)}50%{transform:translate(1.2px,0)}}
+@keyframes rp{from{opacity:.9;stroke-dashoffset:0}to{opacity:0;stroke-dashoffset:-60}}
+@media (prefers-reduced-motion:reduce){.knock .sh,.knock .gk,.knock .rp,.arc,.ledc{animation:none!important}}
+</style></head>
+<body>
+<header class="sticky z-40 glass border-b border-white/10" style="top:env(safe-area-inset-top,0px)">
+ <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+  <a href="#top" class="flex items-center gap-2 font-semibold tracking-wide"><span class="led amber"></span>Untethered
+   <span class="hidden sm:inline mono text-[10px] mu border border-white/10 rounded-full px-2 py-0.5">Patent pending, IPO Kolkata</span></a>
+  <nav class="hidden lg:flex gap-6 text-sm mu">
+   <a class="hover:text-white" href="#arch">Architecture</a><a class="hover:text-white" href="#engine">Acoustic engine</a><a class="hover:text-white" href="#latency">Latency</a><a class="hover:text-white" href="#flow">Clinical workflow</a><a class="hover:text-white" href="#dossier">Grant dossier</a></nav>
+  <button class="tog" id="openM">View grant summary</button>
+ </div>
+</header>
+
+<main id="top">
+<section class="max-w-6xl mx-auto px-4 pt-14 pb-16 grid lg:grid-cols-2 gap-12 items-center">
+ <div>
+  <p class="mono text-xs mu mb-4">A clinician-innovator project at AIIMS Kalyani, prepared for BIRAC E-YUVA</p>
+  <h1 class="text-4xl sm:text-5xl font-bold leading-[1.08] tracking-tight">The stethoscope, re-engineered from the physics up.</h1>
+  <p class="mt-5 text-lg mu max-w-md">No 27-inch rubber tube and no smartphone in the middle. You hear the chest directly in your earbuds, while the bedside dock draws the heart sounds as they happen.</p>
+  <p class="mt-6 font-medium">Zero-tether auscultation. Dedicated telemetry. Zero bedside friction.</p>
+  <div class="mt-8 flex flex-wrap gap-3"><a href="#engine" class="tog">Try the live signal</a><a href="#dossier" class="tog">Grant dossier</a></div>
+ </div>
+ <div>
+  <div id="scene" class="relative pb-40 sm:pb-44">
+   <div class="slab rounded-[28px] p-4 sm:p-5 w-full flex gap-3 sm:gap-4"><div id="cradle" class="well rounded-full self-center shrink-0 w-[24%] aspect-square relative"><span class="absolute inset-[14%] rounded-full border border-dashed border-white/20"></span><span class="mono text-[9px] mu absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">Cradle 160</span></div><div class="flex-1 min-w-0">
+    <div class="flex items-center justify-between mb-3 text-xs mu"><span class="flex items-center gap-2"><span class="led"></span>Dock 150, screen 158</span><span class="mono" id="modeLbl">Cardiac 20 to 500 Hz</span></div>
+    <div class="well rounded-xl overflow-hidden"><canvas id="pcg" class="w-full block" style="height:190px" aria-label="Simulated live phonocardiogram"></canvas></div>
+    <div class="flex items-end justify-between mt-4 gap-2">
+     <div><div class="mono text-4xl font-semibold" style="color:var(--cy)" id="rate">72</div><div class="text-xs mu" id="rateU">beats per minute</div></div>
+     <div class="flex flex-wrap gap-1.5 justify-end"><span class="chip" id="cS1">S1</span><span class="chip" id="cS2">S2</span><span class="chip warn" id="cSys">Systolic</span><span class="chip warn" id="cDia">Diastolic</span></div>
+    </div>
+   </div></div>
+   <div id="chest" class="skin absolute left-0 bottom-0 w-[68%] h-24 sm:h-28"><span class="mono text-[10px] mu absolute bottom-2 left-3">Patient chest 101</span></div>
+   <div id="buds" class="absolute right-1 bottom-2 flex gap-1 items-end"><svg width="54" height="64" viewBox="0 0 54 64" aria-label="Earbuds"><g fill="#E6EDF3" stroke="#8B98A8"><ellipse cx="14" cy="14" rx="10" ry="12"/><rect x="11" y="20" width="6" height="34" rx="3"/><ellipse cx="40" cy="14" rx="10" ry="12"/><rect x="37" y="20" width="6" height="34" rx="3"/></g></svg><span class="mono text-[10px] mu">Earbuds 140</span></div>
+   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" aria-hidden="true"><path id="p1" class="arc" stroke="#00F2FE"/><path id="p2" class="arc" stroke="#10B981"/></svg>
+   <div id="cp" class="cp" role="img" aria-label="Chestpiece 110"><i class="ledc"></i></div>
+   <div id="st" class="absolute left-[24%] bottom-28 sm:bottom-32 text-xs mu max-w-[13rem] hidden sm:block">Docked: charging through contacts 132. Disc chestpiece 110, 40 mm across and 10 mm thick (design target).</div>
+  </div>
+  <div class="flex flex-wrap gap-3 mt-2">
+   <button class="tog" id="dkB" aria-pressed="false">Simulate undocking and skin contact</button>
+   <button class="tog" aria-pressed="true" data-mode="card">Cardiac mode</button>
+   <button class="tog" aria-pressed="false" data-mode="pulm">Pulmonary mode</button>
+   <button class="tog" id="murB" aria-pressed="false">Murmur: off</button>
+   <button class="tog" id="trB" aria-pressed="false">High-pass filter: on</button>
+  </div>
+  <p class="text-xs mu mt-3" id="trN">Hardware high-pass on: sub-10 Hz tremor and breathing drift are removed before the converter.</p>
+ </div>
+</section>
+
+<section id="arch" class="max-w-6xl mx-auto px-4 py-16 grid lg:grid-cols-2 gap-10 items-center">
+ <div>
+  <h2 class="text-3xl font-bold">Cross-section: one quiet signal</h2>
+  <p class="mu mt-3 max-w-md">A cutaway of the chestpiece. Tap any part to read what it does, then knock the shell. The transducer floats inside a silicone member, so finger friction never reaches it.</p>
+  <button class="tog mt-6" id="knock">Simulate finger friction or shell knock</button><input id="ex" type="range" class="hidden" aria-hidden="true" tabindex="-1"><p class="text-sm mu mt-3" id="kr">Press the button and watch the shell and outer gasket shake while the sensing core stays still.</p>
+  <div class="slab rounded-2xl p-5 mt-6 min-h-[130px]"><h3 class="font-semibold" id="lt">Outer shell</h3><p class="mu text-sm mt-2" id="ld"></p></div>
+ </div>
+ <div><svg id="xs" viewBox="0 0 560 300" class="w-full" role="img" aria-label="Cross-section of the chestpiece">
+<defs><pattern id="ht" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#aeb8c4"/><line x1="0" y1="0" x2="0" y2="6" stroke="#4b5666" stroke-width="2"/></pattern></defs>
+<g stroke="#8B98A8" stroke-width="2">
+ <g data-k="0" class="sh" style="cursor:pointer"><path d="M50 215V140Q50 50 280 50Q510 50 510 140V215H480V140Q480 84 280 84Q80 84 80 140V215Z" fill="#232c38"/></g>
+ <g data-k="1" class="sh" style="cursor:pointer"><rect x="80" y="112" width="400" height="10" fill="#0f6b4a"/><rect x="120" y="100" width="40" height="12" fill="#06382a"/><rect x="190" y="100" width="60" height="12" fill="#06382a"/><rect x="390" y="100" width="50" height="12" fill="#06382a"/></g>
+ <g data-k="3" style="cursor:pointer"><g class="gk"><rect x="80" y="136" width="26" height="76" fill="url(#ht)"/><rect x="454" y="136" width="26" height="76" fill="url(#ht)"/></g><rect x="106" y="136" width="26" height="76" fill="url(#ht)"/><rect x="428" y="136" width="26" height="76" fill="url(#ht)"/></g>
+ <g data-k="4" style="cursor:pointer"><path d="M132 226V150H428V226" fill="none"/><rect x="130" y="224" width="300" height="8" fill="#14808a"/><rect x="250" y="150" width="60" height="30" fill="#0e5b63"/></g>
+ <path data-k="2" d="M280 150C312 140 248 132 280 122" fill="none" stroke="#d9a066" stroke-width="3" style="cursor:pointer"/>
+ <g fill="none" stroke="#00F2FE"><path class="rp" d="M110 80Q280 20 450 80" stroke-dasharray="10 8"/><path class="rp" style="animation-delay:.3s" d="M130 96Q280 40 430 96" stroke-dasharray="10 8"/></g>
+ <line x1="30" y1="262" x2="530" y2="262"/>
+</g>
+<g font-size="12" fill="#E6EDF3" font-family="JetBrains Mono,monospace"><text x="518" y="140">111</text><text x="294" y="98">117</text><text x="92" y="230">113</text><text x="268" y="170">114</text><text x="300" y="142" fill="#d9a066">119</text><text x="262" y="206">air chamber 115</text><text x="236" y="250">diaphragm 112</text><text x="200" y="282" fill="#8B98A8">patient chest 101</text></g>
+</svg></div>
+<div hidden class="stack" id="stack">
+  <button class="lyr" style="--i:0;background:radial-gradient(circle at 35% 30%,#8e9aa8,#3b4452)" data-k="0" aria-pressed="true">Outer shell</button>
+  <button class="lyr" style="--i:1;background:linear-gradient(135deg,#0f6b4a,#073d2b)" data-k="1" aria-pressed="false">AFE circuitry</button>
+  <button class="lyr" style="--i:2;background:linear-gradient(135deg,#8a5128,#d9a066)" data-k="2" aria-pressed="false">Flexible lead</button>
+  <button class="lyr" style="--i:3;background:linear-gradient(135deg,#7a8794,#c9d2dc);color:#10161e;text-shadow:none" data-k="3" aria-pressed="false">Silicone decoupling member</button>
+  <button class="lyr" style="--i:4;background:radial-gradient(circle at 40% 35%,#14808a,#04262b)" data-k="4" aria-pressed="false">Floating transducer core</button>
+ </div>
+</section>
+
+<section id="engine" class="max-w-6xl mx-auto px-4 py-16">
+ <h2 class="text-3xl font-bold">Acoustic engine</h2>
+ <p class="mu mt-3 max-w-2xl">Filtering happens in hardware, before digitisation, so tremor and breathing drift never use up the converter's range. Switch modes in the hero to see the pass-band move.</p>
+ <div class="slab rounded-2xl p-6 mt-8">
+  <div class="flex justify-between text-xs mu mono"><span>0 Hz</span><span>500</span><span>1000</span><span>1500 Hz</span></div>
+  <div class="well rounded-full h-5 mt-2 relative overflow-hidden"><div id="band" class="absolute top-0 bottom-0 rounded-full" style="left:1.3%;width:32%;background:linear-gradient(90deg,var(--em),var(--cy));box-shadow:0 0 16px rgba(0,242,254,.6);transition:left .5s,width .5s"></div></div>
+  <p class="mono text-sm mt-3" id="bandT">Cardiac pass-band, 20 to 500 Hz: S1, S2, murmurs</p>
+  <div class="grid sm:grid-cols-3 gap-4 mt-6 text-sm">
+   <div class="well rounded-xl p-4"><b>Active high-pass</b><p class="mu mt-1">Sallen-Key stage rejects hand tremor and breathing baseline wander below about 10 Hz.</p></div>
+   <div class="well rounded-xl p-4"><b>Mechanical decoupling</b><p class="mu mt-1">The silicone member absorbs finger shear before it becomes signal.</p></div>
+   <div class="well rounded-xl p-4"><b>Two streams</b><p class="mu mt-1">One digitised signal feeds the earbud audio path and a separate telemetry path.</p></div>
+  </div>
+ </div>
+</section>
+
+<section id="specs" class="max-w-6xl mx-auto px-4 py-16">
+ <h2 class="text-3xl font-bold">Specifications</h2>
+ <p class="mu mt-3 max-w-2xl">Design targets for the first prototype.</p>
+ <div class="grid md:grid-cols-4 gap-4 mt-8 text-sm">
+  <div class="slab rounded-2xl p-5 md:col-span-2"><h3 class="font-semibold">Transducer and isolation</h3><p class="mu mt-2">A suspended contact transducer (piezo or MEMS) behind a closed air chamber, held in a silicone isolation member (target Shore 20A to 40A) and wired with a flexible lead, so shell friction never reaches the sensor.</p></div>
+  <div class="slab rounded-2xl p-5 md:col-span-2"><h3 class="font-semibold">Analog front-end</h3><p class="mu mt-2">Active high-pass stage rejecting content below about 10 Hz, followed by gain, all before digitisation.</p></div>
+  <div class="slab rounded-2xl p-5"><h3 class="font-semibold">Sampling</h3><p class="mu mt-2">Hardware I2S with DMA at 4 to 8 kHz.</p></div>
+  <div class="slab rounded-2xl p-5"><h3 class="font-semibold">Processor</h3><p class="mu mt-2">Dual core: one core for the audio ring buffer, one for feature extraction.</p></div>
+  <div class="slab rounded-2xl p-5"><h3 class="font-semibold">Radios</h3><p class="mu mt-2">Audio over BLE Audio (LC3) or A2DP; telemetry over ESP-NOW broadcast at 2.4 GHz.</p></div>
+  <div class="slab rounded-2xl p-5"><h3 class="font-semibold">Form factor</h3><p class="mu mt-2">Coin profile, under 40 g, 8 to 15 mm thick.</p></div>
+ </div>
+</section>
+
+<section id="latency" class="max-w-6xl mx-auto px-4 py-16">
+ <h2 class="text-3xl font-bold">Latency you can't hear</h2>
+ <p class="mu mt-3 max-w-2xl">Audio is streamed on a dedicated core through a zero-copy ring buffer fed by I2S DMA. Telemetry runs on the other core, so analysis spikes never stutter the sound.</p>
+ <div class="slab rounded-2xl p-6 mt-8 space-y-6" id="lat">
+  <div><div class="flex justify-between text-sm"><span>Acoustic stethoscope</span><span class="mono" data-v="2" data-t="about 2 ms">0 ms</span></div><div class="well rounded-full h-4 mt-2 overflow-hidden"><div class="h-full rounded-full bar" data-w="1.5" style="width:0;background:#8B98A8;transition:width 1.2s cubic-bezier(.2,.8,.2,1)"></div></div></div>
+  <div><div class="flex justify-between text-sm"><span style="color:var(--cy)">Untethered, design target</span><span class="mono" data-v="38" data-t="under 40 ms">0 ms</span></div><div class="well rounded-full h-4 mt-2 overflow-hidden"><div class="h-full rounded-full bar" data-w="25" style="width:0;background:linear-gradient(90deg,var(--em),var(--cy));box-shadow:0 0 14px var(--cy);transition:width 1.2s cubic-bezier(.2,.8,.2,1)"></div></div></div>
+  <div><div class="flex justify-between text-sm"><span>Consumer digital stethoscopes, reported</span><span class="mono" data-v="115" data-t="80 to 150 ms">0 ms</span></div><div class="well rounded-full h-4 mt-2 overflow-hidden relative"><div class="h-full rounded-full bar" data-w="77" style="width:0;background:#F5B83D;transition:width 1.2s cubic-bezier(.2,.8,.2,1)"></div></div></div>
+  <div class="flex items-center justify-between gap-4"><p class="text-xs mu">Architecture target: under 40 ms, bounded by a zero-copy DMA ring buffer and a direct point-to-point link to the earbuds. The consumer range shown is indicative.</p><button class="tog" id="replay">Replay</button></div>
+ </div>
+</section>
+
+<section id="flow" class="max-w-6xl mx-auto px-4 py-16">
+ <h2 class="text-3xl font-bold">At the bedside</h2>
+ <ol class="grid md:grid-cols-4 gap-4 mt-8">
+  <li class="slab rounded-2xl p-5"><h3 class="font-semibold">Place</h3><p class="mu text-sm mt-2">Set the coin on the chest. The ring lights when contact is good.</p></li>
+  <li class="slab rounded-2xl p-5"><h3 class="font-semibold">Listen</h3><p class="mu text-sm mt-2">Sound reaches your own earbuds in real time. No pairing with a phone.</p></li>
+  <li class="slab rounded-2xl p-5"><h3 class="font-semibold">Watch</h3><p class="mu text-sm mt-2">The dock draws the waveform, rate, S1 and S2, and murmur flags, with no Wi-Fi or login.</p></li>
+  <li class="slab rounded-2xl p-5"><h3 class="font-semibold">Pocket</h3><p class="mu text-sm mt-2">Nest the chestpiece in the dock to charge. The whole kit goes in a coat pocket.</p></li>
+ </ol>
+</section>
+
+<section id="dossier" class="max-w-6xl mx-auto px-4 py-16">
+ <h2 class="text-3xl font-bold">Grant dossier</h2>
+ <p class="mu mt-3 max-w-2xl">Prepared for the BIRAC E-YUVA call. Lead innovator: Snehangshu Roy, MBBS scholar, All India Institute of Medical Sciences (AIIMS), Kalyani.</p>
+ <div class="grid md:grid-cols-2 gap-4 mt-8 text-sm">
+  <div class="slab rounded-2xl p-6"><h3 class="font-semibold text-base">The problem</h3><p class="mu mt-2">Tube stethoscopes tether the clinician to one ear-to-chest geometry. Digital ones add lag or need a phone, an app and a network.</p></div>
+  <div class="slab rounded-2xl p-6"><h3 class="font-semibold text-base">The innovation</h3><p class="mu mt-2">Audio and visual telemetry travel on separate wireless paths, from one pocket-sized, tubing-free device that needs no phone, app, cloud or ward Wi-Fi.</p></div>
+  <div class="slab rounded-2xl p-6"><h3 class="font-semibold text-base">Stage</h3><p class="mu mt-2">BIRAC E-YUVA Innovator Scheme, diagnostic instrumentation. Currently TRL 3 (proof of concept), aiming for TRL 4 through bench and laboratory validation.</p></div>
+  <div class="slab rounded-2xl p-6"><h3 class="font-semibold text-base">IP and regulatory</h3><p class="mu mt-2">Indian patent application: provisional specification (Form 2), IPO Kolkata Branch. Investigational prototype, not a certified medical device.</p></div>
+ </div>
+</section>
+</main>
+
+<footer class="max-w-6xl mx-auto px-4 py-10 text-xs mu border-t border-white/10">Untethered Dual-Path Bio-Acoustic Auscultation System. Lead innovator: Snehangshu Roy, AIIMS Kalyani. Waveforms on this page are simulated for demonstration. Murmur flags are indicators for the clinician, not a diagnosis. Latency and specification figures are design targets pending bench measurement. Investigational prototype, not for diagnostic use.</footer>
+
+<dialog id="M"><h2 class="text-xl font-bold">Grant summary</h2>
+ <p class="mu mt-3 text-sm">A pocket-sized, tubing-free digital stethoscope that sends low-latency audio to the clinician's own earbuds and, on a separate path, live waveform and heart-sound markers to a standalone dock.</p>
+ <h3 class="font-semibold text-sm mt-5">Unmet need</h3><p class="mu text-sm mt-1">Digital stethoscopes add smartphone pairing, an app and a network to the bedside, and consumer wireless audio lags behind the sound.</p>
+ <h3 class="font-semibold text-sm mt-4">Solution</h3><p class="mu text-sm mt-1">Audio streams from a dedicated core straight to the clinician's earbuds, while a second core broadcasts telemetry to an autonomous dock. The transducer is isolated from finger noise by a silicone member and a flexible lead.</p>
+ <h3 class="font-semibold text-sm mt-4">Proposed 12-month plan</h3><ul class="mt-1 text-sm space-y-1 list-disc pl-5 mu"><li>Months 1 to 4: prototype boards and silicone-molded chassis.</li><li>Months 5 to 8: bench latency tests and acoustic-chamber calibration.</li><li>Months 9 to 12: supervised clinical evaluation, after ethics approval.</li></ul>
+ <button class="tog mt-6" id="closeM">Close</button></dialog>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const cv=$('#pcg'),cx=cv.getContext('2d'),rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let mode='card',mur=0,W=0,H=0;
+function size(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);draw()}
+const hash=n=>{const s=Math.sin(n*12.9898)*43758.5453;return s-Math.floor(s)},nz=(t,r)=>hash(Math.floor(t*r))*2-1;
+const P=60/72,burst=(d,f,k,a)=>d<0?0:a*Math.exp(-d/k)*Math.sin(2*Math.PI*f*d);
+let tr=false;
+function sig(t){let v=sig0(t);if(tr){v+=1.8*Math.sin(12*Math.PI*t)+1.2*Math.sin(1.6*Math.PI*t);v=Math.max(-1.35,Math.min(1.35,v))}return v}
+function sig0(t){
+ if(mode==='card'){const p=((t%P)+P)%P;let v=burst(p-.04,48,.028,1)+burst(p-.37,62,.02,.7);
+  if(mur==1&&p>.1&&p<.34)v+=.34*nz(t,1500)*Math.sin(Math.PI*(p-.1)/.24);
+  if(mur==2&&p>.46&&p<.78)v+=.2*nz(t,1500)*Math.sin(Math.PI*(p-.46)/.32);
+  return v+.03*nz(t,900)}
+ const c=((t%4)+4)%4,e=c<1.7?Math.sin(Math.PI*c/1.7)**2:(c>2&&c<3.5?.7*Math.sin(Math.PI*(c-2)/1.5)**2:0);
+ return e*.55*(nz(t,6000)*.7+nz(t,2500)*.5)+.02*nz(t,3000)}
+function draw(){
+ const now=rm?6:performance.now()/1000,win=mode==='card'?3:8;cx.clearRect(0,0,W,H);
+ cx.strokeStyle='rgba(255,255,255,.05)';cx.lineWidth=1;cx.beginPath();for(let i=1;i<8;i++){cx.moveTo(W*i/8,0);cx.lineTo(W*i/8,H)}for(let j=1;j<4;j++){cx.moveTo(0,H*j/4);cx.lineTo(W,H*j/4)}cx.stroke();
+ const g=cx.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(16,185,129,.1)');g.addColorStop(.8,'#10B981');g.addColorStop(1,'#00F2FE');
+ cx.strokeStyle=g;cx.lineWidth=1.6;cx.shadowColor='#00F2FE';cx.shadowBlur=8;cx.beginPath();
+ for(let x=0;x<=W;x++){const t=now-(W-x)/W*win,y=H/2-sig(t)*H*(tr?.27:.4);x?cx.lineTo(x,y):cx.moveTo(x,y)}cx.stroke();cx.shadowBlur=0;if(tr){cx.save();cx.setLineDash([4,4]);cx.strokeStyle='#F5B83D';cx.beginPath();for(const s of[-1,1]){cx.moveTo(0,H/2-s*1.35*H*.27);cx.lineTo(W,H/2-s*1.35*H*.27)}cx.stroke();cx.restore()}
+ if(mode==='card'){cx.font='10px JetBrains Mono,monospace';cx.fillStyle='#8B98A8';
+  for(let k=Math.floor((now-win)/P);k<=Math.ceil(now/P);k++)for(const [o,l] of [[.045,'S1'],[.375,'S2']]){const x=W-(now-(k*P+o))/win*W;if(x>8&&x<W-8){cx.fillRect(x,6,1,8);cx.fillText(l,x-6,24)}}}
+ const p=((now%P)+P)%P;$('#cS1').classList.toggle('on',mode==='card'&&p>.02&&p<.13);$('#cS2').classList.toggle('on',mode==='card'&&p>.34&&p<.45);
+ $('#cSys').classList.toggle('on',mode==='card'&&mur==1);$('#cDia').classList.toggle('on',mode==='card'&&mur==2)}
+(function loop(){draw();if(!rm)requestAnimationFrame(loop)})();
+addEventListener('resize',size);size();
+$$('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===b));const c=mode==='card';
+ $('#modeLbl').textContent=c?'Cardiac 20 to 500 Hz':'Pulmonary 100 to 1500 Hz';$('#rate').textContent=c?'72':'15';$('#rateU').textContent=c?'beats per minute':'breaths per minute';
+ const bd=$('#band');bd.style.left=c?'1.3%':'6.7%';bd.style.width=c?'32%':'93%';$('#bandT').textContent=c?'Cardiac pass-band, 20 to 500 Hz: S1, S2, murmurs':'Pulmonary pass-band, 100 to 1500 Hz: breath sounds';draw()});
+$('#murB').onclick=e=>{mur=(mur+1)%3;e.target.textContent='Murmur: '+['off','systolic','diastolic'][mur];e.target.setAttribute('aria-pressed',mur>0);draw()};
+$('#trB').onclick=e=>{tr=!tr;e.target.textContent=tr?'High-pass filter: bypassed (simulated)':'High-pass filter: on';e.target.setAttribute('aria-pressed',tr);$('#trN').textContent=tr?'Without the high-pass stage, 6 Hz tremor and slow breathing drift swamp the heart sounds and drive the converter into its rails (dashed lines).':'Hardware high-pass on: sub-10 Hz tremor and breathing drift are removed before the converter.';draw()};
+let dk=true;
+function place(){const s=$('#scene').getBoundingClientRect(),cp=$('#cp'),w=cp.offsetWidth,t=(dk?$('#cradle'):$('#chest')).getBoundingClientRect(),cx=dk?t.left+t.width/2:t.left+t.width*.3,cy=dk?t.top+t.height/2:t.top+t.height*.45;
+ cp.style.transform=`translate(${cx-s.left-w/2}px,${cy-s.top-w/2}px)`;
+ const X=cx-s.left,Y=cy-s.top,b=$('#buds').getBoundingClientRect(),c=$('#pcg').getBoundingClientRect(),bx=b.left+b.width/2-s.left,by=b.top-s.top,sx=c.left+c.width/2-s.left,sy=c.bottom-s.top;
+ $('#p1').setAttribute('d',`M${X} ${Y} C${X+80} ${Y+60} ${bx-60} ${by+40} ${bx} ${by}`);$('#p2').setAttribute('d',`M${X} ${Y} C${X} ${Y-80} ${sx-40} ${sy+60} ${sx} ${sy}`)}
+$('#dkB').onclick=e=>{dk=!dk;$('#cp').classList.toggle('act',!dk);$('#scene').classList.toggle('act',!dk);e.target.textContent=dk?'Simulate undocking and skin contact':'Dock the chestpiece';e.target.setAttribute('aria-pressed',!dk);$('#st').textContent=dk?'Docked: charging through contacts 132. Disc chestpiece 110, 40 mm across and 10 mm thick (design target).':'On the chest 101: LED 136 green, audio to earbuds 140 (cyan), telemetry to screen 158 (emerald).';place()};
+addEventListener('resize',place);setTimeout(place,60);
+$('#knock').onclick=()=>{const s=$('#xs');s.classList.remove('knock');void s.getBoundingClientRect();s.classList.add('knock');$('#kr').textContent='Shear waves cross shell 111 and gasket 113 and fade out. Transducer 114 stays still.';setTimeout(()=>{s.classList.remove('knock');$('#kr').textContent='Settled. The sensing core never moved, so no handling noise reached the signal.'},1500)};
+const L=[['Outer shell','The handheld shell is what your fingers touch. It is mechanically separated from the transducer.'],['AFE circuitry','Analog front-end with an active high-pass stage, the converter, dual-core processor and both radios, on a board fixed to the shell.'],['Flexible lead','A slack, flexible connection between the floating transducer and the board. A stiff soldered wire would carry shell vibration straight into the sensor, so the lead is deliberately compliant.'],['Silicone decoupling member','A compliant viscoelastic ring (target Shore 20A to 40A) that suspends the sensing core and absorbs finger friction and knocks before they reach it.'],['Floating transducer core','The diaphragm, sealed air chamber and contact transducer. It touches the chest and nothing else.']];
+function pick(k){$$('#xs [data-k]').forEach(g=>g.classList.toggle('sel',g.dataset.k==k));$$('.lyr').forEach(l=>l.setAttribute('aria-pressed',l.dataset.k==k));$('#lt').textContent=L[k][0];$('#ld').textContent=L[k][1]}
+$$('.lyr').forEach(l=>l.onclick=()=>pick(l.dataset.k));$$('#xs [data-k]').forEach(g=>g.onclick=()=>pick(g.dataset.k));pick(0);
+$('#ex').oninput=e=>$('#stack').style.setProperty('--g',(e.target.value*.6)+'px');$('#ex').oninput({target:$('#ex')});
+function run(){$$('#lat .bar').forEach(b=>{b.style.width=b.dataset.w+'%'});$$('#lat [data-v]').forEach(s=>{const v=+s.dataset.v,t0=performance.now();(function f(n){const q=Math.min(1,(n-t0)/1200);s.textContent=q<1?Math.round(v*(1-Math.pow(1-q,3)))+' ms':s.dataset.t;if(q<1)requestAnimationFrame(f)})(t0)})}
+$('#replay').onclick=()=>{$$('#lat .bar').forEach(b=>b.style.width='0');setTimeout(run,60)};
+new IntersectionObserver((e,o)=>{if(e[0].isIntersecting){run();o.disconnect()}},{threshold:.4}).observe($('#lat'));
+$('#openM').onclick=()=>$('#M').showModal();$('#closeM').onclick=()=>$('#M').close();
+</script></body></html>
